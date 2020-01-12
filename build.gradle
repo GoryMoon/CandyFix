@@ -1,0 +1,123 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+        	url = "https://files.minecraftforge.net/maven"
+        }
+		maven {
+			url 'https://plugins.gradle.org/m2/'
+		}
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+        classpath 'com.wynprice.cursemaven:CurseMaven:2.1.1'
+    }
+}
+apply plugin: 'net.minecraftforge.gradle.forge'
+//Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
+apply plugin: 'com.wynprice.cursemaven'
+apply plugin: 'signing'
+apply plugin: 'maven-publish'
+
+version = "$mc_version-$mod_version"
+group = "se.gory_moon" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "CandyFix"
+
+sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+compileJava {
+    sourceCompatibility = targetCompatibility = '1.8'
+}
+
+if (System.getenv().BUILD_NUMBER != null) {//adds the build number to the end of the version string if on a build server
+    version += ".${System.getenv().BUILD_NUMBER}"
+}
+
+minecraft {
+    version = "$mc_version-$forge_version"
+    runDir = "run"
+    
+    // the mappings can be changed at any time, and must be in the following format.
+    // snapshot_YYYYMMDD   snapshot are built nightly.
+    // stable_#            stables are built at the discretion of the MCP team.
+    // Use non-default mappings at your own risk. they may not always work.
+    // simply re-run your setup task after changing the mappings to update your workspace.
+    mappings = "stable_39"
+    // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+
+    replaceIn "CandyFixContainer.java"
+    replace "@MOD_VERSION@", mod_version
+}
+
+dependencies {
+	deobfCompile "curse.maven:candy-world:2659856" // 1.1.4
+}
+
+processResources {
+    // this will ensure that this task is redone when the versions change.
+    inputs.property "version", mod_version + ".${System.getenv("BUILD_NUMBER") ?: 0}"
+    inputs.property "mcversion", project.minecraft.version
+
+    // replace stuff in mcmod.info, nothing else
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+                
+        // replace version and mcversion
+        expand 'version':project.version, 'mcversion':project.minecraft.version
+    }
+        
+    // copy everything else except the mcmod.info
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+task devJar(type: Jar, dependsOn: 'classes') {
+    from(sourceSets.main.output) {
+        include '**'
+    }
+
+    extension = 'jar'
+    classifier = 'dev'
+}
+
+artifacts {
+    archives devJar
+    archives sourceJar
+}
+
+jar {
+    manifest {
+        attributes 'FMLCorePlugin': 'se.gory_moon.candyfix.CandyFixCore'
+    }
+}
+
+tasks.build.dependsOn('signJar')
+
+task signJar(type: SignJar, dependsOn: ["jar", "devJar"]) {
+    onlyIf {
+        project.hasProperty('keystore_location')
+    }
+
+    alias = 'candyfix'
+    storePass = project.hasProperty('keystore_password') ? project.getProperty('keystore_password') : ""
+    keyStore = project.hasProperty('keystore_location') ? project.getProperty('keystore_location') : ""
+    keyPass = project.hasProperty('keystore_password') ? project.getProperty('keystore_password') : ""
+    inputFile = jar.archivePath
+    outputFile = jar.archivePath
+}
+
+task("uploadJars", dependsOn: "build") {
+    description = "uploads JARs"
+    if (project.hasProperty("local_maven")) {
+        apply plugin: 'maven'
+        uploadArchives {
+            repositories {
+                mavenDeployer {
+                    repository(url: "file://${local_maven}")
+                    pom.artifactId = project.archivesBaseName
+                    pom.version = project.version
+                }
+            }
+        }
+    }
+}

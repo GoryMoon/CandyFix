@@ -1,0 +1,11 @@
+[
+{
+  "modid": "candyfix",
+  "name": "Candy Fix",
+  "description": "A mod that fixes some issues in CandyWorld",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "authorList": ["Gory_Moon"],
+  "logoFile": "logo.png"
+}
+]
