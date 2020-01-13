@@ -107,6 +107,8 @@ task signJar(type: SignJar, dependsOn: ["jar", "devJar"]) {
 }
 
 if (project.hasProperty("local_maven")) {
+    tasks.uploadArchives.dependsOn('build')
+
     uploadArchives {
         repositories {
             mavenDeployer {
