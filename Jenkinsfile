@@ -41,7 +41,7 @@ pipeline {
         stage('Upload') {
             steps {
                 withCredentials([string(credentialsId: 'c0829fae-f3f1-4c2f-9609-6dd535f3ec73', variable: 'key_loc'), string(credentialsId: '482d51af-6be9-4df0-952a-ffb32438a296', variable: 'key_pass'), string(credentialsId: '5637b72a-1312-422b-a3a9-aed08440a90a', variable: 'local_maven')]) {
-                    sh './gradlew uploadJars -Plocal_maven=${local_maven} -Pkeystore_location=${key_loc} -Pkeystore_password=${key_pass} --no-daemon'
+                    sh './gradlew uploadArchives -Plocal_maven=${local_maven} -Pkeystore_location=${key_loc} -Pkeystore_password=${key_pass} --no-daemon'
 
                     // Save and fingerprint
                     fingerprint 'build/libs/*.jar'
